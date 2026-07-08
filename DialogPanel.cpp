@@ -1,4 +1,4 @@
-﻿#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -111,8 +111,7 @@ public:
     DialogueManager(const sf::Font& font, sf::RenderWindow& window)
         : m_font(font), m_window(window),
         m_dialogueVisible(true), m_showHistory(false),
-        m_currentNodeId(0), m_charIndex(0), m_textSpeed(0.04f),
-        m_accumulatedTime(0.f), m_panelOpacity(0.f),
+        m_currentNodeId(0), m_panelOpacity(0.f),
         m_isPanelVisible(false), m_hasOptions(false)
     {
         setupUI();
@@ -167,7 +166,11 @@ public:
     }
 
     void goToNode(int id) {
-        if (m_nodes.find(id) == m_nodes.end()) return;
+        std::cout << "goToNode вызван с id = " << id << std::endl;
+        if (m_nodes.find(id) == m_nodes.end()) {
+            std::cerr << "Ошибка: узел " << id << " не существует!" << std::endl;
+            return;
+        }
 
         if (!m_history.empty() && m_history.back() != m_currentNodeId) {
             m_history.push_back(m_currentNodeId);
@@ -180,10 +183,8 @@ public:
         const auto& node = m_nodes.at(id);
 
         m_currentSpeaker = node.speaker;
-        m_fullText = node.text;
-        m_displayedText = "";
-        m_charIndex = 0;
-        m_accumulatedTime = 0.f;
+        m_fullString = fromUtf8(node.text);
+        m_displayedString = m_fullString;
 
         m_isPanelVisible = true;
         m_panelOpacity = 0.f;
@@ -191,12 +192,14 @@ public:
         m_optionButtons.clear();
 
         m_hasOptions = !node.options.empty();
-        float spacing = 40.f;
+        std::cout << "Узел " << id << ", вариантов: " << node.options.size() << std::endl;
         for (size_t i = 0; i < node.options.size(); ++i) {
             const auto& opt = node.options[i];
+            std::cout << "  Вариант " << i << ": " << opt.text << " -> " << opt.nextNodeId << std::endl;
             auto btn = std::make_unique<Button>(m_font, fromUtf8(opt.text),
                 sf::Vector2f(0, 0), sf::Vector2f(300, 35));
             btn->setCallback([this, opt]() {
+                std::cout << "Нажата кнопка: " << opt.text << " (переход на " << opt.nextNodeId << ")" << std::endl;
                 if (opt.nextNodeId == -1) {
                     endDialogue();
                 }
@@ -224,14 +227,11 @@ public:
             m_panel.setFillColor(sf::Color(0, 0, 0, static_cast<sf::Uint8>(m_panelOpacity)));
         }
 
-        if (!m_fullText.empty() && m_charIndex < static_cast<int>(m_fullText.length())) {
-            m_accumulatedTime += deltaTime;
-            if (m_accumulatedTime >= m_textSpeed) {
-                ++m_charIndex;
-                if (m_charIndex > static_cast<int>(m_fullText.length()))
-                    m_charIndex = static_cast<int>(m_fullText.length());
-                m_displayedText = m_fullText.substr(0, static_cast<size_t>(m_charIndex));
-                m_accumulatedTime = 0.f;
+        if (!m_hasOptions && m_fullString.getSize() > 0) {
+            const auto& node = m_nodes.at(m_currentNodeId);
+            if (node.nextNodeId != -1) {
+                std::cout << "Автоматический переход на узел " << node.nextNodeId << std::endl;
+                goToNode(node.nextNodeId);
             }
         }
     }
@@ -277,19 +277,13 @@ public:
                 }
             }
 
-            if (!clickedOnButton) {
-                if (!m_fullText.empty() && m_charIndex < static_cast<int>(m_fullText.length())) {
-                    m_charIndex = static_cast<int>(m_fullText.length());
-                    m_displayedText = m_fullText;
+            if (!clickedOnButton && !m_hasOptions) {
+                const auto& node = m_nodes.at(m_currentNodeId);
+                if (node.nextNodeId != -1) {
+                    goToNode(node.nextNodeId);
                 }
-                else if (!m_hasOptions) {
-                    const auto& node = m_nodes.at(m_currentNodeId);
-                    if (node.nextNodeId != -1) {
-                        goToNode(node.nextNodeId);
-                    }
-                    else {
-                        endDialogue();
-                    }
+                else {
+                    endDialogue();
                 }
             }
         }
@@ -373,8 +367,7 @@ public:
             m_window.draw(nameText);
         }
 
-        sf::String displayString = m_displayedText.empty() ? sf::String(" ") : fromUtf8(m_displayedText);
-        sf::Text text(displayString, m_font, 22);
+        sf::Text text(m_displayedString, m_font, 22);
         text.setPosition(m_panel.getPosition().x + 20, m_panel.getPosition().y + 50);
         text.setFillColor(sf::Color::White);
         text.setLineSpacing(1.3f);
@@ -388,8 +381,8 @@ public:
             btn->draw(m_window);
         }
 
-        if (!m_hasOptions && !m_fullText.empty() && m_charIndex >= static_cast<int>(m_fullText.length())) {
-            sf::Text hint(fromUtf8("Нажмите для продолжения"), m_font, 14);
+        if (m_hasOptions && m_fullString.getSize() > 0) {
+            sf::Text hint(fromUtf8("Выберите вариант"), m_font, 14);
             hint.setPosition(m_panel.getPosition().x + 20, m_panel.getPosition().y + m_panel.getSize().y - 30);
             hint.setFillColor(sf::Color(200, 200, 200, 150));
             m_window.draw(hint);
@@ -399,14 +392,14 @@ public:
     void drawHistory() {
         m_window.draw(m_historyPanel);
 
-        sf::Text title(L"История диалога", m_font, 24);
+        sf::Text title(fromUtf8("История диалога"), m_font, 24);
         title.setPosition(m_historyPanel.getPosition().x + 20, m_historyPanel.getPosition().y + 10);
         title.setFillColor(sf::Color::White);
         m_window.draw(title);
 
         m_historyCloseBtn->draw(m_window);
 
-        float yOffset = 60;
+        float yOffset = 200;
         float xOffset = m_historyPanel.getPosition().x + 20;
         float maxHeight = m_historyPanel.getPosition().y + m_historyPanel.getSize().y - 20;
 
@@ -465,18 +458,18 @@ private:
         m_panel.setOutlineThickness(2);
         m_panel.setOutlineColor(sf::Color(80, 80, 150));
 
-        m_buttons["hide"] = std::make_unique<Button>(m_font, L"Скрыть", sf::Vector2f(0, 0), sf::Vector2f(80, 30));
-        m_buttons["history"] = std::make_unique<Button>(m_font, L"История", sf::Vector2f(0, 0), sf::Vector2f(80, 30));
-        m_buttons["skip"] = std::make_unique<Button>(m_font, L"Пропуск", sf::Vector2f(0, 0), sf::Vector2f(80, 30));
+        m_buttons["hide"] = std::make_unique<Button>(m_font, fromUtf8("Скрыть"), sf::Vector2f(0, 0), sf::Vector2f(80, 30));
+        m_buttons["history"] = std::make_unique<Button>(m_font, fromUtf8("История"), sf::Vector2f(0, 0), sf::Vector2f(80, 30));
+        m_buttons["skip"] = std::make_unique<Button>(m_font, fromUtf8("Пропуск"), sf::Vector2f(0, 0), sf::Vector2f(80, 30));
 
         m_buttons["hide"]->setCallback([this]() { toggleDialogue(); });
         m_buttons["history"]->setCallback([this]() { showHistoryWindow(); });
         m_buttons["skip"]->setCallback([this]() { skipDialogue(); });
 
-        m_showBtn = std::make_unique<Button>(m_font, L"Показать", sf::Vector2f(0, 0), sf::Vector2f(90, 30));
+        m_showBtn = std::make_unique<Button>(m_font, fromUtf8("Показать"), sf::Vector2f(0, 0), sf::Vector2f(90, 30));
         m_showBtn->setCallback([this]() { toggleDialogue(); });
 
-        m_historyCloseBtn = std::make_unique<Button>(m_font, L"Закрыть", sf::Vector2f(0, 0), sf::Vector2f(90, 30));
+        m_historyCloseBtn = std::make_unique<Button>(m_font, fromUtf8("Закрыть"), sf::Vector2f(0, 0), sf::Vector2f(90, 30));
         m_historyCloseBtn->setCallback([this]() { closeHistoryWindow(); });
 
         m_historyPanel.setFillColor(sf::Color(20, 20, 40, 230));
@@ -495,11 +488,8 @@ private:
     std::unordered_map<int, DialogueNode> m_nodes;
     int m_currentNodeId;
     std::string m_currentSpeaker;
-    std::string m_fullText;
-    std::string m_displayedText;
-    int m_charIndex;
-    float m_textSpeed;
-    float m_accumulatedTime;
+    sf::String m_fullString;
+    sf::String m_displayedString;
     bool m_hasOptions;
     bool m_isPanelVisible;
     float m_panelOpacity;
@@ -517,7 +507,7 @@ private:
 };
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), L"Тест");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Приключение");
     window.setVerticalSyncEnabled(true);
 
     sf::Font font;
