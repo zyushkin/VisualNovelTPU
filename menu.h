@@ -3,15 +3,16 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
+#include <optional>
 
 class Menu
 {
 private:
-    sf::Font font;
+    std::optional<sf::Font> font;
 
     std::vector<std::string> items;
 
-    int selectedIndex;
+    int selectedIndex = 0;
 
 public:
     Menu();

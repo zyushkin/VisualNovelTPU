@@ -1,0 +1,3 @@
+/Users/zaharyushkin/Desktop/VisualNovelTPU/build/CMakeFiles/VisualNovelTPU.dir
+/Users/zaharyushkin/Desktop/VisualNovelTPU/build/CMakeFiles/edit_cache.dir
+/Users/zaharyushkin/Desktop/VisualNovelTPU/build/CMakeFiles/rebuild_cache.dir

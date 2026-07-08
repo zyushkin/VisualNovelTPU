@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/Users/zaharyushkin/Desktop/VisualNovelTPU/build",
+  "command": "/usr/bin/clang++  -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -o CMakeFiles/VisualNovelTPU.dir/main.cpp.o -c /Users/zaharyushkin/Desktop/VisualNovelTPU/main.cpp",
+  "file": "/Users/zaharyushkin/Desktop/VisualNovelTPU/main.cpp",
+  "output": "CMakeFiles/VisualNovelTPU.dir/main.cpp.o"
+},
+{
+  "directory": "/Users/zaharyushkin/Desktop/VisualNovelTPU/build",
+  "command": "/usr/bin/clang++  -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -o CMakeFiles/VisualNovelTPU.dir/game.cpp.o -c /Users/zaharyushkin/Desktop/VisualNovelTPU/game.cpp",
+  "file": "/Users/zaharyushkin/Desktop/VisualNovelTPU/game.cpp",
+  "output": "CMakeFiles/VisualNovelTPU.dir/game.cpp.o"
+},
+{
+  "directory": "/Users/zaharyushkin/Desktop/VisualNovelTPU/build",
+  "command": "/usr/bin/clang++  -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -o CMakeFiles/VisualNovelTPU.dir/menu.cpp.o -c /Users/zaharyushkin/Desktop/VisualNovelTPU/menu.cpp",
+  "file": "/Users/zaharyushkin/Desktop/VisualNovelTPU/menu.cpp",
+  "output": "CMakeFiles/VisualNovelTPU.dir/menu.cpp.o"
+}
+]
