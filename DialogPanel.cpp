@@ -76,19 +76,22 @@ public:
         return m_rect.getGlobalBounds().contains(point);
     }
 
-    void handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
+    bool handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
         sf::Vector2f mouse = window.mapPixelToCoords(sf::Mouse::getPosition(window));
         bool mouseOver = contains(mouse);
 
         if (event.type == sf::Event::MouseMoved) {
             m_rect.setFillColor(mouseOver ? m_hoverColor : m_normalColor);
+            return false;
         }
 
         if (event.type == sf::Event::MouseButtonPressed &&
             event.mouseButton.button == sf::Mouse::Left &&
             mouseOver && m_callback) {
             m_callback();
+            return true;
         }
+        return false;
     }
 
     void setCallback(std::function<void()> callback) { m_callback = callback; }
@@ -111,7 +114,8 @@ public:
     DialogueManager(const sf::Font& font, sf::RenderWindow& window)
         : m_font(font), m_window(window),
         m_dialogueVisible(true), m_showHistory(false),
-        m_currentNodeId(0), m_panelOpacity(0.f),
+        m_currentNodeId(0), m_charIndex(0), m_textSpeed(0.04f),
+        m_accumulatedTime(0.f), m_panelOpacity(0.f),
         m_isPanelVisible(false), m_hasOptions(false)
     {
         setupUI();
@@ -140,19 +144,25 @@ public:
 
         std::unordered_map<int, DialogueNode> nodes;
         for (auto& [key, nodeData] : data["nodes"].items()) {
-            int id = std::stoi(key);
-            DialogueNode node;
-            node.id = id;
-            node.speaker = nodeData.value("speaker", "");
-            node.text = nodeData.value("text", "");
-            node.nextNodeId = nodeData.value("next", -1);
-            for (auto& opt : nodeData["options"]) {
-                DialogueOption option;
-                option.text = opt.value("text", "");
-                option.nextNodeId = opt.value("next", -1);
-                node.options.push_back(option);
+            try {
+                int id = std::stoi(key);
+                DialogueNode node;
+                node.id = id;
+                node.speaker = nodeData.value("speaker", "");
+                node.text = nodeData.value("text", "");
+                node.nextNodeId = nodeData.value("next", -1);
+                for (auto& opt : nodeData["options"]) {
+                    DialogueOption option;
+                    option.text = opt.value("text", "");
+                    option.nextNodeId = opt.value("next", -1);
+                    node.options.push_back(option);
+                }
+                nodes[id] = node;
             }
-            nodes[id] = node;
+            catch (const std::exception& e) {
+                std::cerr << "Ошибка в узле " << key << ": " << e.what() << std::endl;
+                return false;
+            }
         }
         loadDialogue(nodes);
         return true;
@@ -166,7 +176,6 @@ public:
     }
 
     void goToNode(int id) {
-        std::cout << "goToNode вызван с id = " << id << std::endl;
         if (m_nodes.find(id) == m_nodes.end()) {
             std::cerr << "Ошибка: узел " << id << " не существует!" << std::endl;
             return;
@@ -184,7 +193,9 @@ public:
 
         m_currentSpeaker = node.speaker;
         m_fullString = fromUtf8(node.text);
-        m_displayedString = m_fullString;
+        m_displayedString = sf::String();
+        m_charIndex = 0;
+        m_accumulatedTime = 0.f;
 
         m_isPanelVisible = true;
         m_panelOpacity = 0.f;
@@ -192,14 +203,11 @@ public:
         m_optionButtons.clear();
 
         m_hasOptions = !node.options.empty();
-        std::cout << "Узел " << id << ", вариантов: " << node.options.size() << std::endl;
         for (size_t i = 0; i < node.options.size(); ++i) {
             const auto& opt = node.options[i];
-            std::cout << "  Вариант " << i << ": " << opt.text << " -> " << opt.nextNodeId << std::endl;
             auto btn = std::make_unique<Button>(m_font, fromUtf8(opt.text),
                 sf::Vector2f(0, 0), sf::Vector2f(300, 35));
             btn->setCallback([this, opt]() {
-                std::cout << "Нажата кнопка: " << opt.text << " (переход на " << opt.nextNodeId << ")" << std::endl;
                 if (opt.nextNodeId == -1) {
                     endDialogue();
                 }
@@ -227,11 +235,12 @@ public:
             m_panel.setFillColor(sf::Color(0, 0, 0, static_cast<sf::Uint8>(m_panelOpacity)));
         }
 
-        if (!m_hasOptions && m_fullString.getSize() > 0) {
-            const auto& node = m_nodes.at(m_currentNodeId);
-            if (node.nextNodeId != -1) {
-                std::cout << "Автоматический переход на узел " << node.nextNodeId << std::endl;
-                goToNode(node.nextNodeId);
+        if (m_charIndex < m_fullString.getSize()) {
+            m_accumulatedTime += deltaTime;
+            if (m_accumulatedTime >= m_textSpeed) {
+                m_displayedString += m_fullString[m_charIndex];
+                ++m_charIndex;
+                m_accumulatedTime = 0.f;
             }
         }
     }
@@ -259,7 +268,9 @@ public:
         }
 
         for (auto& btn : m_optionButtons) {
-            btn->handleEvent(event, m_window);
+            if (btn->handleEvent(event, m_window)) {
+                return;
+            }
         }
 
         if (event.type == sf::Event::MouseButtonPressed &&
@@ -277,13 +288,19 @@ public:
                 }
             }
 
-            if (!clickedOnButton && !m_hasOptions) {
-                const auto& node = m_nodes.at(m_currentNodeId);
-                if (node.nextNodeId != -1) {
-                    goToNode(node.nextNodeId);
+            if (!clickedOnButton) {
+                if (m_charIndex < m_fullString.getSize()) {
+                    m_charIndex = m_fullString.getSize();
+                    m_displayedString = m_fullString;
                 }
-                else {
-                    endDialogue();
+                else if (!m_hasOptions) {
+                    const auto& node = m_nodes.at(m_currentNodeId);
+                    if (node.nextNodeId != -1) {
+                        goToNode(node.nextNodeId);
+                    }
+                    else {
+                        endDialogue();
+                    }
                 }
             }
         }
@@ -330,10 +347,11 @@ public:
 
         m_nameBoxSize = sf::Vector2f(200.f, 30.f);
 
-        float optionStartY = h - panelH - 10 + 100;
+        float optionStartY = h - panelH - 10 + 120;
         float optionX = w * 0.05f + 20;
+        float optionStep = 45.f;
         for (size_t i = 0; i < m_optionButtons.size(); ++i) {
-            m_optionButtons[i]->setPosition(sf::Vector2f(optionX, optionStartY + i * 40.f));
+            m_optionButtons[i]->setPosition(sf::Vector2f(optionX, optionStartY + i * optionStep));
             m_optionButtons[i]->setSize(sf::Vector2f(panelW * 0.8f, 35.f));
         }
 
@@ -367,7 +385,11 @@ public:
             m_window.draw(nameText);
         }
 
-        sf::Text text(m_displayedString, m_font, 22);
+        sf::String displayString = m_displayedString;
+        if (displayString.isEmpty()) {
+            displayString = sf::String(" ");
+        }
+        sf::Text text(displayString, m_font, 22);
         text.setPosition(m_panel.getPosition().x + 20, m_panel.getPosition().y + 50);
         text.setFillColor(sf::Color::White);
         text.setLineSpacing(1.3f);
@@ -381,8 +403,14 @@ public:
             btn->draw(m_window);
         }
 
-        if (m_hasOptions && m_fullString.getSize() > 0) {
+        if (m_hasOptions && !m_fullString.isEmpty()) {
             sf::Text hint(fromUtf8("Выберите вариант"), m_font, 14);
+            hint.setPosition(m_panel.getPosition().x + 20, m_panel.getPosition().y + m_panel.getSize().y - 30);
+            hint.setFillColor(sf::Color(200, 200, 200, 150));
+            m_window.draw(hint);
+        }
+        else if (!m_hasOptions && !m_fullString.isEmpty()) {
+            sf::Text hint(fromUtf8("Нажмите для продолжения"), m_font, 14);
             hint.setPosition(m_panel.getPosition().x + 20, m_panel.getPosition().y + m_panel.getSize().y - 30);
             hint.setFillColor(sf::Color(200, 200, 200, 150));
             m_window.draw(hint);
@@ -490,6 +518,9 @@ private:
     std::string m_currentSpeaker;
     sf::String m_fullString;
     sf::String m_displayedString;
+    int m_charIndex;
+    float m_textSpeed;
+    float m_accumulatedTime;
     bool m_hasOptions;
     bool m_isPanelVisible;
     float m_panelOpacity;
@@ -507,7 +538,7 @@ private:
 };
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Приключение");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Тест");
     window.setVerticalSyncEnabled(true);
 
     sf::Font font;
