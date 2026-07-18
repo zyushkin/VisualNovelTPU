@@ -20,10 +20,23 @@ struct DialogueOption {
     int nextNodeId;
 };
 
+struct PortraitData {
+    std::string file;
+    float x = 0.f;
+    float y = 0.f;
+    float scale = 1.f;
+};
+
 struct DialogueNode {
     int id = 0;
     std::string speaker;
     std::string text;
+    std::string portraitFile;
+    float portraitX = 0.f;
+    float portraitY = 0.f;
+    float portraitScale = 1.f;
+    std::vector<PortraitData> portraits;
+    std::string backgroundFile;
     int nextNodeId = -1;
     std::vector<DialogueOption> options;
 };
@@ -54,9 +67,12 @@ private:
 
 class DialogueManager {
 public:
-    DialogueManager(const sf::Font& font, sf::RenderWindow& window);
+    DialogueManager(const sf::Font& font, sf::RenderWindow& window,
+        const sf::Vector2f& defaultPortraitPos = sf::Vector2f(400, 250),
+        float defaultPortraitScale = 0.8f);
 
     bool loadFromFile(const std::string& filename);
+    bool loadDialogById(const std::string& id);
     void loadDialogue(const std::unordered_map<int, DialogueNode>& nodes);
     void goToNode(int id);
     void endDialogue();
@@ -72,6 +88,8 @@ public:
     void skipDialogue();
     void toggleSound();
 
+    sf::Sprite& getBackgroundSprite();
+
 private:
     void setupUI();
     void drawHistory();
@@ -83,6 +101,8 @@ private:
     bool m_dialogueVisible;
     bool m_showHistory;
 
+    std::unordered_map<std::string, std::unordered_map<int, DialogueNode>> m_allDialogs;
+    std::string m_currentDialogId;
     std::unordered_map<int, DialogueNode> m_nodes;
     int m_currentNodeId;
     std::string m_currentSpeaker;
@@ -98,6 +118,15 @@ private:
     sf::SoundBuffer m_letterSoundBuffer;
     sf::Sound m_letterSound;
     bool m_soundEnabled;
+
+    sf::Texture m_backgroundTexture;
+    sf::Sprite m_backgroundSprite;
+
+    std::vector<std::unique_ptr<sf::Texture>> m_textures;
+    std::vector<sf::Sprite> m_portraits;
+
+    sf::Vector2f m_defaultPortraitPos;
+    float m_defaultPortraitScale;
 
     sf::RectangleShape m_panel;
     sf::Vector2f m_nameBoxSize;

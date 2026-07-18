@@ -78,20 +78,24 @@ void Button::draw(sf::RenderWindow& window) const {
     window.draw(m_text);
 }
 
-DialogueManager::DialogueManager(const sf::Font& font, sf::RenderWindow& window)
+DialogueManager::DialogueManager(const sf::Font& font, sf::RenderWindow& window,
+    const sf::Vector2f& defaultPortraitPos,
+    float defaultPortraitScale)
     : m_font(font), m_window(window),
     m_dialogueVisible(true), m_showHistory(false),
     m_currentNodeId(0), m_charIndex(0), m_textSpeed(0.04f),
     m_accumulatedTime(0.f), m_panelOpacity(0.f),
     m_isPanelVisible(false), m_hasOptions(false),
-    m_soundEnabled(true)
+    m_soundEnabled(true),
+    m_defaultPortraitPos(defaultPortraitPos),
+    m_defaultPortraitScale(defaultPortraitScale)
 {
     if (!m_letterSoundBuffer.loadFromFile("click.wav")) {
         std::cerr << "Предупреждение: не удалось загрузить звук 'click.wav'\n";
     }
     else {
         m_letterSound.setBuffer(m_letterSoundBuffer);
-        m_letterSound.setVolume(100.f); // громкость
+        m_letterSound.setVolume(100.f);
     }
 
     setupUI();
@@ -113,34 +117,109 @@ bool DialogueManager::loadFromFile(const std::string& filename) {
         return false;
     }
 
-    if (!data.contains("nodes")) {
-        std::cerr << "В JSON отсутствует поле 'nodes'" << std::endl;
-        return false;
-    }
+    auto parseNodes = [&](const json& nodesData) -> std::unordered_map<int, DialogueNode> {
+        std::unordered_map<int, DialogueNode> nodes;
+        for (auto& [key, nodeData] : nodesData.items()) {
+            try {
+                int id = std::stoi(key);
+                DialogueNode node;
+                node.id = id;
+                node.speaker = nodeData.value("speaker", "");
+                node.text = nodeData.value("text", "");
+                node.backgroundFile = nodeData.value("background", "");
+                node.nextNodeId = nodeData.value("next", -1);
 
-    std::unordered_map<int, DialogueNode> nodes;
-    for (auto& [key, nodeData] : data["nodes"].items()) {
-        try {
-            int id = std::stoi(key);
-            DialogueNode node;
-            node.id = id;
-            node.speaker = nodeData.value("speaker", "");
-            node.text = nodeData.value("text", "");
-            node.nextNodeId = nodeData.value("next", -1);
-            for (auto& opt : nodeData["options"]) {
-                DialogueOption option;
-                option.text = opt.value("text", "");
-                option.nextNodeId = opt.value("next", -1);
-                node.options.push_back(option);
+                if (nodeData.contains("portraits") && nodeData["portraits"].is_array()) {
+                    for (auto& p : nodeData["portraits"]) {
+                        PortraitData pd;
+                        pd.file = p.value("file", "");
+                        pd.x = p.value("x", m_defaultPortraitPos.x);
+                        pd.y = p.value("y", m_defaultPortraitPos.y);
+                        pd.scale = p.value("scale", m_defaultPortraitScale);
+                        node.portraits.push_back(pd);
+                    }
+                }
+                else {
+                    node.portraitFile = nodeData.value("portrait", "");
+                    node.portraitX = nodeData.value("portraitX", m_defaultPortraitPos.x);
+                    node.portraitY = nodeData.value("portraitY", m_defaultPortraitPos.y);
+                    node.portraitScale = nodeData.value("portraitScale", m_defaultPortraitScale);
+                    if (!node.portraitFile.empty()) {
+                        PortraitData pd;
+                        pd.file = node.portraitFile;
+                        pd.x = node.portraitX;
+                        pd.y = node.portraitY;
+                        pd.scale = node.portraitScale;
+                        node.portraits.push_back(pd);
+                    }
+                }
+
+                for (auto& opt : nodeData["options"]) {
+                    DialogueOption option;
+                    option.text = opt.value("text", "");
+                    option.nextNodeId = opt.value("next", -1);
+                    node.options.push_back(option);
+                }
+                nodes[id] = node;
             }
-            nodes[id] = node;
+            catch (const std::exception& e) {
+                std::cerr << "Ошибка в узле " << key << ": " << e.what() << std::endl;
+            }
         }
-        catch (const std::exception& e) {
-            std::cerr << "Ошибка в узле " << key << ": " << e.what() << std::endl;
+        return nodes;
+        };
+
+    if (data.contains("dialogs")) {
+        m_allDialogs.clear();
+        for (auto& [key, dialogData] : data["dialogs"].items()) {
+            if (!dialogData.contains("nodes")) {
+                std::cerr << "В диалоге " << key << " отсутствует поле 'nodes'" << std::endl;
+                continue;
+            }
+            m_allDialogs[key] = parseNodes(dialogData["nodes"]);
+        }
+        if (!m_allDialogs.empty()) {
+            auto first = m_allDialogs.begin();
+            m_currentDialogId = first->first;
+            loadDialogue(first->second);
+            return true;
+        }
+        else {
+            std::cerr << "Не найдено ни одного диалога." << std::endl;
             return false;
         }
     }
-    loadDialogue(nodes);
+    else {
+        if (!data.contains("nodes")) {
+            std::cerr << "В JSON отсутствует поле 'nodes'" << std::endl;
+            return false;
+        }
+        auto nodes = parseNodes(data["nodes"]);
+        m_allDialogs.clear();
+        m_allDialogs["default"] = nodes;
+        m_currentDialogId = "default";
+        loadDialogue(nodes);
+        return true;
+    }
+}
+
+bool DialogueManager::loadDialogById(const std::string& id) {
+    auto it = m_allDialogs.find(id);
+    if (it == m_allDialogs.end()) {
+        std::cerr << "Диалог с ID '" << id << "' не найден!" << std::endl;
+        return false;
+    }
+    m_history.clear();
+    m_currentNodeId = 0;
+    m_charIndex = 0;
+    m_displayedString = sf::String();
+    m_fullString = sf::String();
+    m_currentSpeaker.clear();
+    m_optionButtons.clear();
+    m_hasOptions = false;
+    m_dialogueVisible = true;
+    m_currentDialogId = id;
+    loadDialogue(it->second);
     return true;
 }
 
@@ -172,6 +251,39 @@ void DialogueManager::goToNode(int id) {
     m_displayedString = sf::String();
     m_charIndex = 0;
     m_accumulatedTime = 0.f;
+
+    if (!node.backgroundFile.empty()) {
+        if (m_backgroundTexture.loadFromFile(node.backgroundFile)) {
+            m_backgroundSprite.setTexture(m_backgroundTexture);
+            sf::Vector2u winSize = m_window.getSize();
+            if (m_backgroundTexture.getSize().x > 0 && m_backgroundTexture.getSize().y > 0) {
+                m_backgroundSprite.setScale(
+                    (float)winSize.x / m_backgroundTexture.getSize().x,
+                    (float)winSize.y / m_backgroundTexture.getSize().y
+                );
+            }
+        }
+        else {
+            std::cerr << "Не удалось загрузить фон: " << node.backgroundFile << std::endl;
+        }
+    }
+
+    m_portraits.clear();
+    m_textures.clear();
+    for (const auto& pd : node.portraits) {
+        auto tex = std::make_unique<sf::Texture>();
+        if (tex->loadFromFile(pd.file)) {
+            sf::Sprite spr;
+            spr.setTexture(*tex);
+            spr.setPosition(pd.x, pd.y);
+            spr.setScale(pd.scale, pd.scale);
+            m_portraits.push_back(spr);
+            m_textures.push_back(std::move(tex));
+        }
+        else {
+            std::cerr << "Не удалось загрузить портрет: " << pd.file << std::endl;
+        }
+    }
 
     m_isPanelVisible = true;
     m_panelOpacity = 0.f;
@@ -232,7 +344,7 @@ void DialogueManager::handleEvent(const sf::Event& event) {
             sf::Vector2f mouse = m_window.mapPixelToCoords(
                 sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
             if (m_historyCloseBtn->contains(mouse)) {
-                m_showHistory = false;
+                closeHistoryWindow();
             }
         }
         return;
@@ -335,10 +447,25 @@ void DialogueManager::resize(const sf::Vector2u& newSize) {
         m_optionButtons[i]->setSize(sf::Vector2f(panelW * 0.8f, 35.f));
     }
 
+    if (m_backgroundTexture.getSize().x > 0 && m_backgroundTexture.getSize().y > 0) {
+        m_backgroundSprite.setScale(
+            (float)newSize.x / m_backgroundTexture.getSize().x,
+            (float)newSize.y / m_backgroundTexture.getSize().y
+        );
+    }
+
     m_windowSize = newSize;
 }
 
 void DialogueManager::draw() {
+    if (m_backgroundSprite.getTexture() != nullptr) {
+        m_window.draw(m_backgroundSprite);
+    }
+
+    for (auto& spr : m_portraits) {
+        m_window.draw(spr);
+    }
+
     if (m_showHistory) {
         drawHistory();
         return;
@@ -398,6 +525,11 @@ void DialogueManager::draw() {
 }
 
 void DialogueManager::drawHistory() {
+    sf::RectangleShape overlay;
+    overlay.setSize(sf::Vector2f(m_windowSize));
+    overlay.setFillColor(sf::Color(0, 0, 0, 200));
+    m_window.draw(overlay);
+
     m_window.draw(m_historyPanel);
 
     sf::Text title(fromUtf8("История диалога"), m_font, 24);
@@ -465,6 +597,10 @@ void DialogueManager::toggleSound() {
     std::cout << "Звук " << (m_soundEnabled ? "включён" : "выключен") << std::endl;
 }
 
+sf::Sprite& DialogueManager::getBackgroundSprite() {
+    return m_backgroundSprite;
+}
+
 void DialogueManager::setupUI() {
     m_panel.setFillColor(sf::Color(0, 0, 0, 0));
     m_panel.setOutlineThickness(2);
@@ -490,20 +626,22 @@ void DialogueManager::setupUI() {
 }
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Тест");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Визуальная новелла");
     window.setVerticalSyncEnabled(true);
 
     sf::Font font;
     if (!font.loadFromFile("Lora-VariableFont_wght.ttf")) {
-        std::cerr << "Ошибка загрузки шрифта Lora-VariableFont_wght.ttf\n";
+        std::cerr << "Ошибка загрузки шрифта\n";
         return -1;
     }
 
-    DialogueManager manager(font, window);
+    DialogueManager manager(font, window, sf::Vector2f(400, 250), 0.8f);
     if (!manager.loadFromFile("dialogue.json")) {
-        std::cerr << "Не удалось загрузить диалог. Проверьте файл dialogue.json\n";
+        std::cerr << "Не удалось загрузить диалог.\n";
         return -1;
     }
+
+    manager.loadDialogById("тест");
 
     sf::Clock clock;
     while (window.isOpen()) {
@@ -519,7 +657,6 @@ int main() {
                 manager.resize({ event.size.width, event.size.height });
             }
 
-            //Клавиша "M" для включения/выключения звука
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::M) {
                 manager.toggleSound();
             }
@@ -529,7 +666,7 @@ int main() {
 
         manager.update(deltaTime);
 
-        window.clear(sf::Color(30, 30, 60));
+        window.clear();
         manager.draw();
         window.display();
     }
