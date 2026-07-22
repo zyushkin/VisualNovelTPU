@@ -158,6 +158,7 @@ bool DialogueManager::loadFromFile(const std::string& filename) {
                     DialogueOption option;
                     option.text = opt.value("text", "");
                     option.nextNodeId = opt.value("next", -1);
+                    option.nextDialogId = opt.value("nextDialog", "");
                     node.options.push_back(option);
                 }
                 nodes[id] = node;
@@ -296,7 +297,10 @@ void DialogueManager::goToNode(int id) {
         auto btn = std::make_unique<Button>(m_font, fromUtf8(opt.text),
             sf::Vector2f(0, 0), sf::Vector2f(300, 35));
         btn->setCallback([this, opt]() {
-            if (opt.nextNodeId == -1) {
+            if (!opt.nextDialogId.empty()) {
+                loadDialogById(opt.nextDialogId);
+            }
+            else if (opt.nextNodeId == -1) {
                 endDialogue();
             }
             else {
@@ -641,7 +645,7 @@ int main() {
         return -1;
     }
 
-    manager.loadDialogById("тест");
+    manager.loadDialogById("комната_общежития");
 
     sf::Clock clock;
     while (window.isOpen()) {
@@ -659,6 +663,21 @@ int main() {
 
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::M) {
                 manager.toggleSound();
+            }
+
+            if (event.type == sf::Event::KeyPressed) {
+                switch (event.key.code) {
+                case sf::Keyboard::Num1: manager.loadDialogById("комната_общежития"); break;
+                case sf::Keyboard::Num2: manager.loadDialogById("коридор_общежития"); break;
+                case sf::Keyboard::Num3: manager.loadDialogById("вход"); break;
+                case sf::Keyboard::Num4: manager.loadDialogById("компьютерный_класс"); break;
+                case sf::Keyboard::Num5: manager.loadDialogById("библиотека"); break;
+                case sf::Keyboard::Num6: manager.loadDialogById("столовая"); break;
+                case sf::Keyboard::Num7: manager.loadDialogById("хим_лаборатория"); break;
+                case sf::Keyboard::Num8: manager.loadDialogById("музыкальный_класс"); break;
+                case sf::Keyboard::Num9: manager.loadDialogById("возвращение_в_общежитие"); break;
+                default: break;
+                }
             }
 
             manager.handleEvent(event);

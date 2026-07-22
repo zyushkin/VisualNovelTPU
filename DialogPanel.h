@@ -18,6 +18,7 @@ sf::String fromUtf8(const std::string& str);
 struct DialogueOption {
     std::string text;
     int nextNodeId;
+    std::string nextDialogId;
 };
 
 struct PortraitData {

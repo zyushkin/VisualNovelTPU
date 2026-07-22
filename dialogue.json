@@ -1,127 +1,378 @@
 {
-  "nodes": {
-    "0": {
-      "speaker": "Рассказчик",
-      "text": "Добро пожаловать в тестовый диалог! У тебя будет выбор.",
-      "next": 1,
-      "options": []
-    },
-    "1": {
-      "speaker": "Рассказчик",
-      "text": "Первый выбор: у тебя 2 варианта. Куда пойдёшь?",
-      "next": -1,
-      "options": [
-        {
-          "text": "Налево",
-          "next": 2
+  "dialogs": {
+    "комната_общежития": {
+      "nodes": {
+        "0": {
+          "speaker": "Рассказчик",
+          "text": "Утро. Солнце едва пробивается сквозь шторы. Ты просыпаешься в своей комнате в общежитии №14. За окном слышен шум города.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_dormitory_room.jpg",
+          "next": 1,
+          "options": []
         },
-        {
-          "text": "Направо",
-          "next": 3
+        "1": {
+          "speaker": "Рассказчик",
+          "text": "Сегодня тебя ждут: занятие по программированию в 19-м корпусе, химия в том же корпусе, а затем музыка в 3-м корпусе. После пар можно будет отдохнуть.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_dormitory_room.jpg",
+          "next": 2,
+          "options": []
+        },
+        "2": {
+          "speaker": "Рассказчик",
+          "text": "Пора собираться! Не забудь взять ноутбук и тетради.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_dormitory_room.jpg",
+          "next": -1,
+          "options": []
         }
-      ]
+      }
     },
-    "2": {
-      "speaker": "Рассказчик",
-      "text": "Ты пошёл налево и встретил друзей.",
-      "next": 4,
-      "options": []
-    },
-    "3": {
-      "speaker": "Рассказчик",
-      "text": "Ты пошёл направо и нашёл сокровище.",
-      "next": 4,
-      "options": []
-    },
-    "4": {
-      "speaker": "Рассказчик",
-      "text": "Теперь выбор из трёх вариантов: куда отправиться?",
-      "next": -1,
-      "options": [
-        {
-          "text": "Пойти в лес",
-          "next": 5
-        },
-        {
-          "text": "Пойти к реке",
-          "next": 6
-        },
-        {
-          "text": "Пойти в горы",
-          "next": 7
+
+    "коридор_общежития": {
+      "nodes": {
+        "0": {
+          "speaker": "Рассказчик",
+          "text": "Ты выходишь в коридор общежития. Здесь тихо, большинство студентов уже ушли на пары. Ты направляешься к выходу.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_hall_dormitory.jpg",
+          "next": -1,
+          "options": []
         }
-      ]
+      }
     },
-    "5": {
-      "speaker": "Рассказчик",
-      "text": "В лесу ты встретил волка, но убежал.",
-      "next": 8,
-      "options": []
-    },
-    "6": {
-      "speaker": "Рассказчик",
-      "text": "У реки ты нашёл рыбу и приготовил ужин.",
-      "next": 8,
-      "options": []
-    },
-    "7": {
-      "speaker": "Рассказчик",
-      "text": "В горах ты увидел орла и полюбовался видом.",
-      "next": 8,
-      "options": []
-    },
-    "8": {
-      "speaker": "Рассказчик",
-      "text": "Теперь финальный выбор: 4 варианта. Что делать?",
-      "next": -1,
-      "options": [
-        {
-          "text": "Вернуться домой",
-          "next": 9
-        },
-        {
-          "text": "Продолжить путь",
-          "next": 10
-        },
-        {
-          "text": "Остаться здесь",
-          "next": 11
-        },
-        {
-          "text": "Позвать друзей",
-          "next": 12
+
+    "вход": {
+      "nodes": {
+        "0": {
+          "speaker": "Друг",
+          "text": "ТПУ-тян, привет! Ты тоже на программирование? Я как раз ждал тебя. Пойдём вместе, а то опаздаем!",
+          "portraits": [
+            {
+              "file": "sprite_student.png",
+              "x": 1150,
+              "y": 250,
+              "scale": 1.0
+            },
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 150,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_19_BLD.jpg",
+          "next": -1,
+          "options": []
         }
-      ]
+      }
     },
-    "9": {
-      "speaker": "Рассказчик",
-      "text": "Ты вернулся домой и рассказал о приключениях.",
-      "next": 13,
-      "options": []
+
+    "компьютерный_класс": {
+      "nodes": {
+        "0": {
+          "speaker": "Преподаватель",
+          "text": "ТПУ-тян, садись. Сегодня будем разбирать алгоритмы сортировки. Открой ноутбук и запусти среду разработки.",
+          "portraits": [
+            {
+              "file": "sprite_programm_teacher.png",
+              "x": 1150,
+              "y": 250,
+              "scale": 0.4
+            },
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 150,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_computer_class.png",
+          "next": 1,
+          "options": []
+        },
+        "1": {
+          "speaker": "Рассказчик",
+          "text": "Занятие проходит спокойно. Ты успешно справляешься с заданием. После пары у тебя перерыв. Что делать дальше?",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_computer_class.png",
+          "next": -1,
+          "options": [
+            {
+              "text": "Пойти в библиотеку",
+              "nextDialog": "19_библиотека"
+            },
+            {
+              "text": "Пойти пообедать",
+              "nextDialog": "19_столовая"
+            }
+          ]
+        }
+      }
     },
-    "10": {
-      "speaker": "Рассказчик",
-      "text": "Ты отправился дальше и нашёл новый город.",
-      "next": 13,
-      "options": []
+
+    "библиотека": {
+      "nodes": {
+        "0": {
+          "speaker": "Библиотекарь",
+          "text": "Здравствуйте! Чем могу помочь? У нас есть отличные учебники по химии, если вы готовитесь к сегодняшней паре.",
+          "portraits": [
+            {
+              "file": "sprite_librarian.png",
+              "x": 1150,
+              "y": 250,
+              "scale": 0.35
+            },
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 150,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_libr.jpg",
+          "next": 1,
+          "options": []
+        },
+        "1": {
+          "speaker": "ТПУ-тян",
+          "text": "Спасибо, я возьму учебник по органической химии. Пригодится.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_libr.jpg",
+          "next": 2,
+          "options": []
+        },
+        "2": {
+          "speaker": "Рассказчик",
+          "text": "Ты берёшь учебник, и время быстро пролетает. Теперь пора на химию.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_libr.jpg",
+          "next": -1,
+          "options": []
+        }
+      }
     },
-    "11": {
-      "speaker": "Рассказчик",
-      "text": "Ты решил остаться и построил дом.",
-      "next": 13,
-      "options": []
+
+    "столовая": {
+      "nodes": {
+        "0": {
+          "speaker": "Рассказчик",
+          "text": "Ты заходишь в столовую. Здесь много студентов. Ты покупаешь обед и садишься за свободный столик.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_canteen.jpg",
+          "next": 1,
+          "options": []
+        },
+        "1": {
+          "speaker": "Студент за соседним столиком",
+          "text": "Эй, это же ТПУ-тян! Ты тоже идешь на химию после обеда? Говорят, там будут сложные опыты.",
+          "portraits": [
+            {
+              "file": "sprite_student_book.png",
+              "x": 750,
+              "y": 250,
+              "scale": 0.8
+            },
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 150,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_canteen.jpg",
+          "next": 2,
+          "options": []
+        },
+        "2": {
+          "speaker": "ТПУ-тян",
+          "text": "Да, я слышала. Но, думаю, справлюсь.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_canteen.png",
+          "next": -1,
+          "options": []
+        }
+      }
     },
-    "12": {
-      "speaker": "Рассказчик",
-      "text": "Ты позвал друзей, и вы устроили пир.",
-      "next": 13,
-      "options": []
+
+    "хим_лаборатория": {
+      "nodes": {
+        "0": {
+          "speaker": "Преподаватель химии",
+          "text": "Сегодня мы проводим опыт по синтезу аспирина. Работайте аккуратно, соблюдайте технику безопасности.",
+          "portraits": [
+            {
+              "file": "sprite_chemestry_teacher.png",
+              "x": 1150,
+              "y": 250,
+              "scale": 0.7
+            },
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 150,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_chemestry_class.png",
+          "next": 1,
+          "options": []
+        },
+        "1": {
+          "speaker": "Рассказчик",
+          "text": "Ты успешно выполняешь опыт, и даже находишь время помочь соседу. Преподаватель хвалит тебя.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_chemestry_class.png",
+          "next": 2,
+          "options": []
+        },
+        "2": {
+          "speaker": "Рассказчик",
+          "text": "Химия закончилась. Теперь у тебя музыка в 3-м корпусе. Пора переходить.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_chemestry_class.png",
+          "next": -1,
+          "options": []
+        }
+      }
     },
-    "13": {
-      "speaker": "Рассказчик",
-      "text": "Приключение окончено. Спасибо за игру!",
-      "next": -1,
-      "options": []
+
+    "музыкальный_класс": {
+      "nodes": {
+        "0": {
+          "speaker": "Преподаватель музыки",
+          "text": "Добрый день! Сегодня мы разучиваем новое произведение. Возьмите свои инструменты.",
+          "portraits": [
+            {
+              "file": "sprite_music_teacher.png",
+              "x": 1150,
+              "y": 250,
+              "scale": 1.9
+            },
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 150,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_music_class.jpg",
+          "next": 1,
+          "options": []
+        },
+        "1": {
+          "speaker": "Рассказчик",
+          "text": "Ты играешь на фортепиано. Занятие проходит вдохновенно. Наконец, последняя пара закончена.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_music_class.jpg",
+          "next": -1,
+          "options": []
+        }
+      }
+    },
+
+    "возвращение_в_общежитие": {
+      "nodes": {
+        "0": {
+          "speaker": "Рассказчик",
+          "text": "Ты возвращаешься в общежитие. День был насыщенным и интересным. Ты ужинаешь, отдыхаешь и умываешься. За окном темнеет. Ты ложишься спать.",
+          "portraits": [
+            {
+              "file": "sprite_TPU_chan_test.png",
+              "x": 400,
+              "y": 250,
+              "scale": 0.8
+            }
+          ],
+          "background": "sprite_dormitory_room.jpg",
+          "next": -1,
+          "options": []
+        }
+      }
     }
   }
 }
